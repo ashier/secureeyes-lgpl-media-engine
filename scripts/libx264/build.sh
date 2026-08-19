@@ -11,6 +11,7 @@ cp ${PROJECT_DIR}/scripts/libx264/meson.* .
 sed -i '' 's/\-arch arm64//g' configure
 
 meson setup build \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}" \
     -Ddefault_library=shared |

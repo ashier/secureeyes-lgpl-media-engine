@@ -7,6 +7,7 @@ cd ${SRC_DIR}
 
 cp ${PROJECT_DIR}/scripts/libass/meson.build ./meson.build
 meson setup build \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}"
 

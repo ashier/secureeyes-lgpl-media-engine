@@ -8,6 +8,7 @@ cd ${SRC_DIR}
 # cross build with meson
 cp ${PROJECT_DIR}/scripts/mbedtls/meson.build ./meson.build
 meson setup build_cross \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}"
 meson compile -C build_cross mbedtls
@@ -22,6 +23,17 @@ cp -R subprojects/mbedtls/include/mbedtls/*.h dist/include/mbedtls
 cp -R subprojects/mbedtls/include/psa/*.h dist/include/psa
 ## install libs
 find . -type f -name '*.dylib' -exec sh -c 'mv {} dist/lib' \;
+## recreate the unversioned symlinks. cmake emits libmbedtls.19.dylib beside a
+## libmbedtls.dylib symlink, and the find above takes only regular files, so
+## without this the link test for `-lmbedtls` fails and ffmpeg's configure
+## reports "mbedTLS not found" while pkg-config resolves it perfectly well.
+for LIB in dist/lib/*.dylib; do
+    BASE=$(basename "${LIB}")
+    LINK=$(echo "${BASE}" | sed 's|\.[0-9][0-9]*\.dylib$|.dylib|')
+    if [ "${LINK}" != "${BASE}" ]; then
+        ln -sf "${BASE}" "dist/lib/${LINK}"
+    fi
+done
 ## install pkgconfig file
 cp ${PROJECT_DIR}/scripts/mbedtls/mbedtls.pc.in dist/lib/pkgconfig/mbedtls.pc
 sed -i '' 's|${PREFIX}|'${OUTPUT_DIR}'|g' dist/lib/pkgconfig/mbedtls.pc

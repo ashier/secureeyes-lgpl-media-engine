@@ -109,6 +109,13 @@ all: \
 	${OUTPUT_DIR}/libmpv-xcframeworks_${VERSION}_macos-universal-video-full.tar.gz \
 	${OUTPUT_DIR}/libmpv-xcframeworks_${VERSION}_macos-universal-video-encodersgpl.tar.gz
 
+# The two artifacts SecureEyes ships: the LGPL flavor, video variant, for
+# macOS and for iOS (device + simulator, which `ios-universal` covers).
+.PHONY: lgpl
+lgpl: \
+	${OUTPUT_DIR}/libmpv-xcframeworks_${VERSION}_macos-universal-video-lgpl.tar.gz \
+	${OUTPUT_DIR}/libmpv-xcframeworks_${VERSION}_ios-universal-video-lgpl.tar.gz
+
 ${OUTPUT_DIR}/debug.zip: \
 	${INTERMEDIATE_DIR}/tool-versions.lock \
 	$$(foreach OS,ios iossimulator macos, \
@@ -969,9 +976,13 @@ ${INTERMEDIATE_DIR}/libx264_%: \
 ${INTERMEDIATE_DIR}/libs-arch_%: \
 	${INTERMEDIATE_DIR}/mpv_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*))-$$(word 3,$$(subst -, ,$$*)) \
 	${INTERMEDIATE_DIR}/ffmpeg_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*))-$$(word 3,$$(subst -, ,$$*))-$$(word 4,$$(subst -, ,$$*)) \
-	${INTERMEDIATE_DIR}/mbedtls_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*)) \
-	$$(if $$(filter encodersgpl, $$(word 4,$$(subst -, ,$$*))), \
+	$$(if $$(filter-out lgpl, $$(word 4,$$(subst -, ,$$*))), \
+		${INTERMEDIATE_DIR}/mbedtls_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*)) \
+	) \
+	$$(if $$(filter encodersgpl lgpl, $$(word 4,$$(subst -, ,$$*))), \
 		${INTERMEDIATE_DIR}/fftools-ffi_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*))-$$(word 3,$$(subst -, ,$$*)) \
+	) \
+	$$(if $$(filter encodersgpl, $$(word 4,$$(subst -, ,$$*))), \
 		${INTERMEDIATE_DIR}/libvorbis_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*)) \
 		${INTERMEDIATE_DIR}/libogg_$$(word 1,$$(subst -, ,$$*))-$$(word 2,$$(subst -, ,$$*)) \
 	) \

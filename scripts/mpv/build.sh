@@ -5,6 +5,22 @@ set -u # treat unset variables as an error
 
 cd ${SRC_DIR}
 
+# When pkg-config cannot answer for zlib, meson falls back to CMake's
+# FindZLIB, and CMake replies with the *macOS* SDK's libz.tbd even on an
+# iOS-simulator build. ld then refuses it outright: "building for
+# iOS-simulator, but linking in dylib built for macOS". zlib is a system
+# library present in every Apple SDK, so publish a pkg-config file that says
+# nothing more than -lz and let -isysroot select the right one.
+mkdir -p pkgconfig-shim
+cat >pkgconfig-shim/zlib.pc <<'PC'
+Name: zlib
+Description: zlib compression library
+Version: 1.2.12
+Libs: -lz
+Cflags:
+PC
+export PKG_CONFIG_PATH="${PWD}/pkgconfig-shim:${PKG_CONFIG_PATH:-}"
+
 patch -p1 <${PROJECT_DIR}/patches/mpv-fix-missing-objc.patch
 if [ "${VARIANT}" == "audio" ]; then
     patch -p1 <${PROJECT_DIR}/patches/mpv-remove-libass.patch
@@ -190,6 +206,7 @@ elif [ "${OS}" == "ios" ]; then
 fi
 
 meson setup build \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}" \
     "${OPTIONS[@]}" |

@@ -13,6 +13,7 @@ patch -p1 <${PROJECT_DIR}/patches/ffmpeg-fix-dash-base-url-escape.patch
 cp ${PROJECT_DIR}/scripts/ffmpeg/meson.* .
 
 meson setup build \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}" \
     -Dvariant=${VARIANT} \

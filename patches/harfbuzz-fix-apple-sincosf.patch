@@ -1,0 +1,21 @@
+Fall back to sinf/cosf on Apple platforms.
+
+harfbuzz's meson probes for `sincosf` with cc.has_function(), which succeeds
+because the symbol is present in libSystem, and then defines HAVE_SINCOSF. But
+Apple's math.h never declares `sincosf` (it spells it `__sincosf`), so the call
+below fails to compile with "use of undeclared identifier". Taking the
+sinf/cosf path instead is behaviourally identical; it costs one extra
+transcendental in variable composite glyph rendering, which is not a path video
+playback touches at all.
+
+--- a/src/OT/glyf/VarCompositeGlyph.hh
++++ b/src/OT/glyf/VarCompositeGlyph.hh
+@@ -180,7 +180,7 @@
+     rotation = rotation * HB_PI;
+     float c;
+     float s;
+-#ifdef HAVE_SINCOSF
++#if defined(HAVE_SINCOSF) && !defined(__APPLE__)
+     sincosf (rotation, &s, &c);
+ #else
+     c = cosf (rotation);

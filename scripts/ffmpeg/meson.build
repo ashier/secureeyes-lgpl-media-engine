@@ -11,7 +11,7 @@ objc = meson.get_compiler('objc')
 nm = find_program('nm')
 ar = find_program('ar')
 strip = find_program('strip')
-pkg_config = find_program('pkgconfig')
+pkg_config = find_program('pkg-config', 'pkgconfig')
 
 # build options
 c_args = get_option('c_args')
@@ -297,6 +297,44 @@ video_encodersgpl_options = [
     '--enable-gpl'
 ]
 
+# The shipping flavor. `encodersgpl` bolts two unrelated things together: the
+# muxers and native encoders (`audio_encodersgpl_options`, all plain LGPL) and
+# the GPL block (`video_encodersgpl_options`). We want the first without the
+# second, because GPL libav* cannot ship in a closed App Store binary while
+# muxers are what `stream-record` needs.
+#
+# The flavor also pins the licence at LGPL v2.1+ rather than v3+, which is the
+# version with App Store precedent behind it (VideoLAN relicensed libVLC to
+# v2.1 for exactly this reason; v3's Installation Information requirement is
+# the contested point for code-signed binaries).
+#
+# That is why the TLS backend changes here too. ffmpeg refuses
+# `--disable-version3` while mbedtls is enabled, because mbedtls is Apache-2.0
+# and incompatible with LGPL v2.1 - see `EXTERNAL_LIBRARY_VERSION3_LIST` in
+# ffmpeg's configure, which dies rather than warns. SecureTransport is Apple's
+# own, ships with the OS, and is listed in `tls_protocol_deps_any`, so https
+# and tls keep working with no third-party licence attached. configure reads
+# its arguments in order, so these later flags override `common_options`.
+#
+# libvorbis is deliberately not taken from `audio_encodersgpl_options`. It is
+# BSD, so the licence does not object, but it only buys a Vorbis *encoder* and
+# nothing here encodes Vorbis: recording stream-copies into matroska and the
+# MP4 export re-encodes audio to AAC with ffmpeg's own encoder. Leaving it out
+# drops libvorbis and libogg from the dependency closure and four frameworks
+# from the bundle. The native Vorbis decoder is unaffected - that comes from
+# `--enable-decoders` in `audio_full_options`.
+lgpl_options = [
+    # what `encodersgpl` was really for, minus the GPL half
+    '--enable-encoders',
+    '--enable-muxers',
+    '--enable-filters',
+
+    # licence and TLS, which are the same decision (see above)
+    '--disable-mbedtls', # conflicts with securetransport, and forces version3
+    '--enable-securetransport',
+    '--disable-version3',
+]
+
 # disable all option
 options = disable_all_options
 
@@ -324,6 +362,13 @@ elif flavor == 'encodersgpl'
     if variant == 'video'
         options += video_full_options
         options += video_encodersgpl_options
+    endif
+elif flavor == 'lgpl'
+    options += audio_full_options
+    options += lgpl_options
+    if variant == 'video'
+        options += video_full_options
+        # deliberately NOT video_encodersgpl_options
     endif
 endif
 

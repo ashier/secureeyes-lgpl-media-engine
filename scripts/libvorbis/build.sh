@@ -8,6 +8,7 @@ cd ${SRC_DIR}
 cp ${PROJECT_DIR}/scripts/libvorbis/meson.* .
 
 meson setup build \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}" |
     tee configure.log

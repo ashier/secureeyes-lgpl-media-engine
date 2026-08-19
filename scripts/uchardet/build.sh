@@ -5,9 +5,16 @@ set -u # treat unset variables as an error
 
 cd ${SRC_DIR}
 
+# uchardet 0.0.8 asks for cmake_minimum_required(VERSION 2.6) and CMake 4
+# removed compatibility below 3.5. Exported rather than passed as -D because
+# this script drives cmake twice: once through meson's subproject machinery
+# and once directly for the native build below.
+export CMAKE_POLICY_VERSION_MINIMUM=3.5
+
 # cross build with meson
 cp ${PROJECT_DIR}/scripts/uchardet/meson.build ./meson.build
 meson setup build_cross \
+    --buildtype=release \
     --cross-file ${PROJECT_DIR}/cross-files/${OS}-${ARCH}.ini \
     --prefix="${OUTPUT_DIR}"
 meson compile -C build_cross uchardet
